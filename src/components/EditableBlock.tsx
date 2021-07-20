@@ -3,24 +3,23 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../rootReducer';
 import keyDownHandler from '../keyDownHandler';
 
-const EditableBlock = React.forwardRef((props, ref: React.Ref<HTMLDivElement>) => {
+const EditableBlock = (props: any) => {
   const [tempText, setTempText] = useState('');
   const [text, setText] = useState('Type \'/\' for commands');
+  const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
+
+  const selectedBlock = useSelector((state: RootState) => state.blocks.selectedBlock);
 
   const onInputHandler = (e: React.FormEvent) => {
     const target = e.target as Element;
     setTempText(target.innerHTML);
   };
 
-  // useEffect(() => {
-  //   document.addEventListener('keydown', (e) => keyDownHandler(e, dispatch));
-  // });
-
-  // useEffect(() => {
-  //   if (id === selectedBlock.id) {
-  //     ref.current?.focus();
-  //   }
-  // });
+  useEffect(() => {
+    if (props.id === selectedBlock.id) {
+      ref.current?.focus();
+    }
+  });
 
   return (
     <div
@@ -35,6 +34,6 @@ const EditableBlock = React.forwardRef((props, ref: React.Ref<HTMLDivElement>) =
       {text}
     </div>
   );
-});
+};
 
 export default EditableBlock;

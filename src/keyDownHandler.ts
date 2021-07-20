@@ -7,6 +7,8 @@ export default (
   dispatch: AppDispatch,
   ref: React.RefObject<HTMLDivElement>,
 ) => {
+  const target = e.target as Element;
+
   switch (e.key) {
     case 'Enter':
       e.preventDefault();
@@ -15,19 +17,19 @@ export default (
         name: 'textField',
       }));
 
-      ref.current?.focus();
+      // ref.current?.focus();
       break;
     case 'Backspace':
-      if (ref.current?.innerHTML === '') {
+      if (target.innerHTML === '') {
         const currentBlock = getState().blocks.selectedBlock;
 
-        const previousBlock: HTMLDivElement = ref.current?.previousSibling as HTMLDivElement;
-        previousBlock.focus();
+        // const previousBlock: HTMLDivElement = ref.current?.previousSibling as HTMLDivElement;
+        // previousBlock.focus();
 
         dispatch(deleteBlock(currentBlock.id));
       }
       break;
     default:
-      console.log(e.key);
+      console.log(e);
   }
 };

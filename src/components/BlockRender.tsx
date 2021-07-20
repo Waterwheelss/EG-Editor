@@ -18,7 +18,7 @@ const BlockRender = () => {
     <div>
       {blocks.blocksGroup.map((block) => {
         return (
-          <EditableBlock key={block.id} ref={ref} />
+          <EditableBlock key={block.id} id={block.id} />
         );
       })}
     </div>
