@@ -20,6 +20,10 @@ export default (
     case 'Backspace':
       if (ref.current?.innerHTML === '') {
         const currentBlock = getState().blocks.selectedBlock;
+
+        const previousBlock: HTMLDivElement = ref.current?.previousSibling as HTMLDivElement;
+        previousBlock.focus();
+
         dispatch(deleteBlock(currentBlock.id));
       }
       break;

@@ -7,7 +7,7 @@ import EditableBlock from './EditableBlock';
 
 const BlockRender = () => {
   const dispatch = useDispatch();
-  const ref = useRef<HTMLDivElement>(null);
+  const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
   const blocks = useSelector((state: RootState) => state.blocks);
 
   useEffect(() => {

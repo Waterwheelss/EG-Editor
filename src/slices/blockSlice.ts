@@ -8,7 +8,6 @@ import {
 type Block = {
   id?: string,
   name?: string,
-  ref?: any,
 }
 
 type BlockState = {
@@ -17,7 +16,12 @@ type BlockState = {
 }
 
 const initialState: BlockState = {
-  blocksGroup: [],
+  blocksGroup: [
+    {
+      id: nanoid(),
+      name: 'textField',
+    },
+  ],
   selectedBlock: {},
 };
 
@@ -50,8 +54,8 @@ export const blockSlice = createSlice({
       newBlocksGroup.splice(blockIndex, 1);
 
       return {
-        ...state,
         blocksGroup: newBlocksGroup,
+        selectedBlock: newBlocksGroup[previousBlockIndex],
       };
     },
   },
