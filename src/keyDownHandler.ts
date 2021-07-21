@@ -1,4 +1,3 @@
-import React from 'react';
 import { AppDispatch, getState } from './store';
 import { addBlock, deleteBlock } from './slices/blockSlice';
 

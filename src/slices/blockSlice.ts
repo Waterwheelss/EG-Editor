@@ -1,33 +1,32 @@
-import React from 'react';
 import {
   createSlice,
   nanoid,
   PayloadAction,
 } from '@reduxjs/toolkit';
+import {
+  Block,
+  BlockState,
+  BlockPayload,
+} from '../types/block';
 
-type Block = {
-  id?: string,
-  name?: string,
-}
+const createInitialState = (name: string): BlockState => {
+  const id = nanoid();
+  const initialBlock = {
+    id,
+    name,
+  };
 
-type BlockState = {
-  blocksGroup: Array<Block>,
-  selectedBlock: Block,
-}
-
-const initialState: BlockState = {
-  blocksGroup: [
-    {
-      id: nanoid(),
-      name: 'textField',
-    },
-  ],
-  selectedBlock: {},
+  return {
+    blocksGroup: [
+      initialBlock,
+    ],
+    selectedBlock: initialBlock,
+  };
 };
 
 export const blockSlice = createSlice({
   name: 'blocks',
-  initialState,
+  initialState: createInitialState('textField'),
   reducers: {
     addBlock: {
       reducer: (state, action: PayloadAction<Block>) => {
@@ -37,7 +36,7 @@ export const blockSlice = createSlice({
           selectedBlock: block,
         };
       },
-      prepare: (block: Block) => {
+      prepare: (block: BlockPayload) => {
         return {
           payload: {
             id: nanoid(),

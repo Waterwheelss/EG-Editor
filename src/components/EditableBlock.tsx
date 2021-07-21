@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../rootReducer';
 
-type Props = {
-  id: string | undefined
+type EditableBlockProps = {
+  id: string
 }
 
-const EditableBlock = (props: Props) => {
+const EditableBlock = ({ id }: EditableBlockProps) => {
   const [tempText, setTempText] = useState('');
   const [text, setText] = useState('');
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
@@ -29,7 +29,7 @@ const EditableBlock = (props: Props) => {
   };
 
   useEffect(() => {
-    if (props.id === selectedBlock.id) {
+    if (id === selectedBlock.id) {
       setCaretToEnd(ref.current as HTMLDivElement);
     }
   });
