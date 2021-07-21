@@ -11,3 +11,21 @@ body {
 .block {
   padding: 10px;
 }
+
+[contenteditable='true']:empty:focus::before {
+  content: attr(placeholder);
+  pointer-events: none;
+  display: block;
+  color: #919191;
+}
+
+.blockContainer {
+  position: relative;
+}
+
+.block__placeholder {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  color: #919191;
+}

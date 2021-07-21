@@ -7,11 +7,10 @@ import EditableBlock from './EditableBlock';
 
 const BlockRender = () => {
   const dispatch = useDispatch();
-  const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
   const blocks = useSelector((state: RootState) => state.blocks);
 
   useEffect(() => {
-    document.addEventListener('keydown', (e) => keyDownHandler(e, dispatch, ref));
+    document.addEventListener('keydown', (e) => keyDownHandler(e, dispatch));
   }, []);
 
   return (

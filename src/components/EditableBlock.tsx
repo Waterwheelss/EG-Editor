@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../rootReducer';
-import keyDownHandler from '../keyDownHandler';
 
-const EditableBlock = (props: any) => {
+type Props = {
+  id: string | undefined
+}
+
+const EditableBlock = (props: Props) => {
   const [tempText, setTempText] = useState('');
-  const [text, setText] = useState('Type \'/\' for commands');
+  const [text, setText] = useState('');
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
 
   const selectedBlock = useSelector((state: RootState) => state.blocks.selectedBlock);
@@ -15,9 +18,19 @@ const EditableBlock = (props: any) => {
     setTempText(target.innerHTML);
   };
 
+  const setCaretToEnd = (element: HTMLDivElement) => {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    element.focus();
+  };
+
   useEffect(() => {
     if (props.id === selectedBlock.id) {
-      ref.current?.focus();
+      setCaretToEnd(ref.current as HTMLDivElement);
     }
   });
 
@@ -29,7 +42,7 @@ const EditableBlock = (props: any) => {
       className="block"
       onInput={onInputHandler}
       onBlur={() => setText(tempText)}
-      onFocus={() => setText('')}
+      placeholder="Type '/' for commands"
     >
       {text}
     </div>
