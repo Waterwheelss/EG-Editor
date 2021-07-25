@@ -10,6 +10,7 @@ const keyDownHandler = (e: KeyboardEvent, dispatch: AppDispatch) => {
 
       dispatch(addBlock({
         name: 'textField',
+        text: '',
       }));
 
       break;

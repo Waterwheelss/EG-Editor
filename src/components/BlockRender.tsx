@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../rootReducer';
 import keyDownHandler from '../keyDownHandler';
 
-import EditableBlock from './EditableBlock';
+import EditableBlock from './EditableBlock/EditableBlock';
 
 const BlockRender = () => {
   const dispatch = useDispatch();

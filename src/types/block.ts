@@ -1,5 +1,6 @@
 export type BlockPayload = {
-  name: string;
+  name: string,
+  text: string,
 }
 
 export type Block = {

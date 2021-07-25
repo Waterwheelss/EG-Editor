@@ -9,11 +9,21 @@ import {
   BlockPayload,
 } from '../types/block';
 
+type ChangeTextPayload = {
+  id: string,
+  text: string,
+}
+
+const addString = (string: string, index: number, stringToAdd: string) => {
+  return string.substring(0, index) + stringToAdd + string.substring(index, string.length);
+};
+
 const createInitialState = (name: string): BlockState => {
   const id = nanoid();
   const initialBlock = {
     id,
     name,
+    text: 'initial text',
   };
 
   return {
@@ -57,9 +67,21 @@ export const blockSlice = createSlice({
         selectedBlock: newBlocksGroup[previousBlockIndex],
       };
     },
+    changeText: (state, action: PayloadAction<ChangeTextPayload>) => {
+      const { id, text } = action.payload;
+      const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+
+      const selection = window.getSelection() as any;
+
+      console.log(selection);
+
+      const newState = { ...state };
+      // eslint-disable-next-line max-len
+      newState.blocksGroup[blockIndex].text = addString(newState.blocksGroup[blockIndex].text, selection.baseOffset, text);
+    },
   },
 });
 
-export const { addBlock, deleteBlock } = blockSlice.actions;
+export const { addBlock, deleteBlock, changeText } = blockSlice.actions;
 
 export default blockSlice.reducer;
