@@ -1,9 +1,7 @@
-import { AppDispatch, getState } from './store';
-import { addBlock, deleteBlock, deleteText } from './slices/blockSlice';
+import { AppDispatch } from './store';
+import { addBlock } from './slices/blockSlice';
 
 const keyDownHandler = (e: KeyboardEvent, dispatch: AppDispatch) => {
-  const target = e.target as Element;
-
   switch (e.key) {
     case 'Enter':
       e.preventDefault();

@@ -8,15 +8,24 @@ import {
   BlockState,
   BlockPayload,
 } from '../types/block';
-import { addString, deleteString } from '../utils/string';
+import {
+  addString,
+  deleteString,
+  replaceString,
+} from '../utils/string';
 
-type AddTextPayload = {
+interface AddTextPayload {
   id: string,
   text: string,
 }
 
-type DeleteTextPayload = {
+type DeleteTextPayload = string;
+
+interface ReplaceTextPayload {
   id: string,
+  startOffset: number,
+  endOffset: number,
+  newString?: string,
 }
 
 const createInitialState = (name: string): BlockState => {
@@ -77,7 +86,7 @@ export const blockSlice = createSlice({
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = addString(state.blocksGroup[blockIndex].text, selection.anchorOffset, text);
     },
-    deleteText: (state, action: PayloadAction<string>) => {
+    deleteText: (state, action: PayloadAction<DeleteTextPayload>) => {
       const id = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
 
@@ -85,6 +94,15 @@ export const blockSlice = createSlice({
 
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = deleteString(state.blocksGroup[blockIndex].text, selection.anchorOffset);
+    },
+    replaceText: (state, action: PayloadAction<ReplaceTextPayload>) => {
+      const {
+        id, startOffset, endOffset, newString,
+      } = action.payload;
+      const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+
+      // eslint-disable-next-line max-len
+      state.blocksGroup[blockIndex].text = replaceString(state.blocksGroup[blockIndex].text, startOffset, endOffset, newString);
     },
   },
 });
@@ -94,6 +112,7 @@ export const {
   deleteBlock,
   addText,
   deleteText,
+  replaceText,
 } = blockSlice.actions;
 
 export default blockSlice.reducer;
