@@ -1,19 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
-import { changeText } from '../../slices/blockSlice';
-import ContentEditable from './ContentEditable';
-
-import markdownParser from '../../lib/markdownParser';
+import { addText, deleteText } from '../../slices/blockSlice';
+import { setCaret, getCaret } from '../../utils/caret';
+import { deleteString } from '../../utils/string';
 
 type EditableBlockProps = {
   id: string
 }
 
 const EditableBlock = ({ id }: EditableBlockProps) => {
-  const [text, setText] = useState('test');
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
   const caretPosition = useRef(0);
+  const presskey: React.MutableRefObject<string | null> = useRef(null);
 
   const BlockData = useSelector(
     (state: RootState) => state.blocks.blocksGroup.find((block) => block.id === id),
@@ -26,56 +25,47 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
   }
 
   useEffect(() => {
-    setCaret(ref.current, caretPosition.current + 1);
-    setText(BlockData.text);
+    if (ref.current === null) {
+      throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
+    }
+
+    if (presskey.current === 'Backspace') {
+      setCaret(ref.current, caretPosition.current - 1);
+    } else {
+      setCaret(ref.current, caretPosition.current + 1);
+    }
   });
+
+  const onKeyDownHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const { key } = e;
+
+    if (key === 'Backspace') {
+      e.preventDefault();
+
+      if (ref.current === null) {
+        throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
+      }
+
+      caretPosition.current = getCaret(ref.current);
+      presskey.current = key;
+      dispatch(deleteText(id));
+    }
+  };
 
   const onKeyPressHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.preventDefault();
+
+    if (ref.current === null) {
+      throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
+    }
+
     caretPosition.current = getCaret(ref.current);
-    dispatch(changeText({
+    presskey.current = null;
+    dispatch(addText({
       id,
       text: e.key,
     }));
   };
-
-  const getCaret = (element: any): number => {
-    let newCaretPosition = 0;
-    const selection = window.getSelection();
-
-    if (selection?.rangeCount === 0) {
-      return newCaretPosition;
-    }
-
-    const range = selection?.getRangeAt(0);
-    const preRange = range?.cloneRange();
-    preRange?.selectNodeContents(element);
-    preRange?.setEnd(range?.endContainer as any, range?.endOffset as any);
-    newCaretPosition = preRange?.toString().length as number;
-
-    return newCaretPosition;
-  };
-
-  function setCaret(element: any, offset: any) {
-    let newOffset;
-
-    const selection = window.getSelection();
-    const stringRange = document.createRange();
-    const range = document.createRange();
-
-    stringRange.selectNodeContents(element);
-
-    if (offset > stringRange?.toString().length) {
-      newOffset = offset - 1;
-    } else {
-      newOffset = offset;
-    }
-
-    range.setStart(element.childNodes[0], newOffset);
-    range.collapse(true);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  }
 
   return (
     <>
@@ -85,8 +75,11 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         suppressContentEditableWarning
         className="block"
         onKeyPress={onKeyPressHandler}
+        onKeyDown={onKeyDownHandler}
+        onInput={() => console.log('oninput')}
         placeholder="Type '/' for commands"
-        dangerouslySetInnerHTML={{ __html: text }}
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: BlockData.text }}
       />
     </>
   );

@@ -8,15 +8,16 @@ import {
   BlockState,
   BlockPayload,
 } from '../types/block';
+import { addString, deleteString } from '../utils/string';
 
-type ChangeTextPayload = {
+type AddTextPayload = {
   id: string,
   text: string,
 }
 
-const addString = (string: string, index: number, stringToAdd: string) => {
-  return string.substring(0, index) + stringToAdd + string.substring(index, string.length);
-};
+type DeleteTextPayload = {
+  id: string,
+}
 
 const createInitialState = (name: string): BlockState => {
   const id = nanoid();
@@ -67,21 +68,32 @@ export const blockSlice = createSlice({
         selectedBlock: newBlocksGroup[previousBlockIndex],
       };
     },
-    changeText: (state, action: PayloadAction<ChangeTextPayload>) => {
+    addText: (state, action: PayloadAction<AddTextPayload>) => {
       const { id, text } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
 
-      const selection = window.getSelection() as any;
+      const selection = window.getSelection() as Selection;
 
-      console.log(selection);
-
-      const newState = { ...state };
       // eslint-disable-next-line max-len
-      newState.blocksGroup[blockIndex].text = addString(newState.blocksGroup[blockIndex].text, selection.baseOffset, text);
+      state.blocksGroup[blockIndex].text = addString(state.blocksGroup[blockIndex].text, selection.anchorOffset, text);
+    },
+    deleteText: (state, action: PayloadAction<string>) => {
+      const id = action.payload;
+      const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+
+      const selection = window.getSelection() as Selection;
+
+      // eslint-disable-next-line max-len
+      state.blocksGroup[blockIndex].text = deleteString(state.blocksGroup[blockIndex].text, selection.anchorOffset);
     },
   },
 });
 
-export const { addBlock, deleteBlock, changeText } = blockSlice.actions;
+export const {
+  addBlock,
+  deleteBlock,
+  addText,
+  deleteText,
+} = blockSlice.actions;
 
 export default blockSlice.reducer;

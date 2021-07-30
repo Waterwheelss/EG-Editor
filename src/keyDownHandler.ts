@@ -1,5 +1,5 @@
 import { AppDispatch, getState } from './store';
-import { addBlock, deleteBlock } from './slices/blockSlice';
+import { addBlock, deleteBlock, deleteText } from './slices/blockSlice';
 
 const keyDownHandler = (e: KeyboardEvent, dispatch: AppDispatch) => {
   const target = e.target as Element;
@@ -13,13 +13,6 @@ const keyDownHandler = (e: KeyboardEvent, dispatch: AppDispatch) => {
         text: '',
       }));
 
-      break;
-    case 'Backspace':
-      if (target.innerHTML === '') {
-        const currentBlock = getState().blocks.selectedBlock;
-
-        dispatch(deleteBlock(currentBlock.id));
-      }
       break;
     default:
       break;
