@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
 import { addText, deleteText, replaceText } from '../../slices/blockSlice';
@@ -12,7 +12,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
   const caretPosition = useRef(0);
   const presskey: React.MutableRefObject<string | null> = useRef(null);
-  const [isReplace, setIsReplace] = useState(false);
+  const isCollapsed: React.MutableRefObject<boolean> = useRef(false);
 
   const BlockData = useSelector(
     (state: RootState) => state.blocks.blocksGroup.find((block) => block.id === id),
@@ -29,7 +29,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
     }
 
-    if (presskey.current === 'Backspace' && isReplace) {
+    if (presskey.current === 'Backspace' && !isCollapsed.current) {
       setCaret(ref.current, caretPosition.current);
     } else if (presskey.current === 'Backspace') {
       setCaret(ref.current, caretPosition.current - 1);
@@ -48,15 +48,14 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
       }
 
-      presskey.current = key;
-
       const selection = window.getSelection() as Selection;
 
-      const { startOffset, endOffset } = selection.getRangeAt(0);
+      presskey.current = key;
+      isCollapsed.current = selection.isCollapsed;
 
-      if (!selection.isCollapsed) {
+      if (!isCollapsed.current) {
+        const { startOffset, endOffset } = selection.getRangeAt(0);
         caretPosition.current = startOffset;
-        setIsReplace(true);
         dispatch(replaceText({
           id,
           startOffset,
@@ -64,7 +63,6 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         }));
       } else {
         caretPosition.current = getCaret(ref.current);
-        setIsReplace(false);
         dispatch(deleteText(id));
       }
     }
@@ -80,11 +78,11 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
     const selection = window.getSelection() as Selection;
 
     presskey.current = null;
+    isCollapsed.current = selection.isCollapsed;
 
-    if (!selection.isCollapsed) {
+    if (!isCollapsed.current) {
       const { startOffset, endOffset } = selection.getRangeAt(0);
       caretPosition.current = startOffset;
-      setIsReplace(true);
       dispatch(replaceText({
         id,
         startOffset,
@@ -93,7 +91,6 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       }));
     } else {
       caretPosition.current = getCaret(ref.current);
-      setIsReplace(false);
       dispatch(addText({
         id,
         text: e.key,
