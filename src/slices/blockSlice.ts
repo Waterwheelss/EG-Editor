@@ -33,7 +33,7 @@ const createInitialState = (name: string): BlockState => {
   const initialBlock = {
     id,
     name,
-    text: 'initial text',
+    text: 'initial test',
   };
 
   return {
