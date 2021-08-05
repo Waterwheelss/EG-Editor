@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
 import { addText, deleteText, replaceText } from '../../slices/blockSlice';
-import { setCaret, getCaret } from '../../utils/caret';
+import { Block } from '../../types/block';
+import { setCaret, getCaretCharacterOffset } from '../../lib/selection/caret';
 
 type EditableBlockProps = {
   id: string
@@ -11,6 +12,8 @@ type EditableBlockProps = {
 const EditableBlock = ({ id }: EditableBlockProps) => {
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
   const caretPosition = useRef(0);
+  const refStartContainer: React.MutableRefObject<Node | null> = useRef(null);
+  const refStartOffset = useRef(0);
   const presskey: React.MutableRefObject<string | null> = useRef(null);
   const isCollapsed: React.MutableRefObject<boolean> = useRef(false);
 
@@ -29,12 +32,14 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
     }
 
-    if (presskey.current === 'Backspace' && !isCollapsed.current) {
-      setCaret(ref.current, caretPosition.current);
-    } else if (presskey.current === 'Backspace') {
-      setCaret(ref.current, caretPosition.current - 1);
-    } else {
-      setCaret(ref.current, caretPosition.current + 1);
+    if (refStartContainer.current !== null) {
+      if (presskey.current === 'Backspace' && !isCollapsed.current) {
+        setCaret(refStartContainer.current, refStartOffset.current);
+      } else if (presskey.current === 'Backspace') {
+        setCaret(refStartContainer.current, refStartOffset.current - 1);
+      } else {
+        setCaret(refStartContainer.current, refStartOffset.current + 1);
+      }
     }
   });
 
@@ -54,17 +59,34 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       isCollapsed.current = selection.isCollapsed;
 
       if (!isCollapsed.current) {
-        const { startOffset, endOffset } = selection.getRangeAt(0);
+        const { startOffset, endOffset, startContainer } = selection.getRangeAt(0);
         caretPosition.current = startOffset;
+
+        refStartContainer.current = startContainer;
+        refStartOffset.current = startOffset;
+
+        const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
+
         dispatch(replaceText({
           id,
-          startOffset,
-          endOffset,
+          startOffset: characterStartOffset,
+          endOffset: characterEndOffset,
         }));
       } else {
-        caretPosition.current = getCaret(ref.current);
-        dispatch(deleteText(id));
+        const { startOffset, startContainer } = selection.getRangeAt(0);
+
+        caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
+        refStartContainer.current = startContainer;
+        refStartOffset.current = startOffset;
+
+        dispatch(deleteText({
+          id,
+          caretCharacterPosition: caretPosition.current,
+        }));
       }
+    }
+    if (ref.current === null) {
+      throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
     }
   };
 
@@ -81,21 +103,62 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
     isCollapsed.current = selection.isCollapsed;
 
     if (!isCollapsed.current) {
-      const { startOffset, endOffset } = selection.getRangeAt(0);
+      const {
+        startOffset,
+        startContainer,
+        endOffset,
+        endContainer,
+      } = selection.getRangeAt(0);
+
+      const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
+
       caretPosition.current = startOffset;
+      refStartContainer.current = startContainer;
+      refStartOffset.current = startOffset;
+
       dispatch(replaceText({
         id,
-        startOffset,
-        endOffset,
+        startOffset: characterStartOffset,
+        endOffset: characterEndOffset,
         newString: e.key,
       }));
     } else {
-      caretPosition.current = getCaret(ref.current);
+      const { startOffset, startContainer } = selection.getRangeAt(0);
+
+      caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
+      refStartContainer.current = startContainer;
+      refStartOffset.current = startOffset;
       dispatch(addText({
         id,
         text: e.key,
+        caretCharacterPosition: caretPosition.current,
       }));
     }
+  };
+
+  const render = () => {
+    const html = markdownRender(BlockData);
+    return html;
+  };
+
+  const markdownRender = (block: Block) => {
+    const string = block.text;
+    const stringArray: Array<any> = [];
+
+    if (block.styles?.length === 0) {
+      stringArray.push(string);
+      return stringArray;
+    }
+
+    block.styles?.forEach((style) => {
+      const { startOffset, endOffset } = style;
+      stringArray.push(string.substring(0, startOffset));
+      const propString = string.substring(startOffset, endOffset);
+      stringArray.push(<code>{propString}</code>);
+      stringArray.push(string.substring(endOffset, string.length));
+    });
+
+    return stringArray;
   };
 
   return (
@@ -108,9 +171,9 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         onKeyPress={onKeyPressHandler}
         onKeyDown={onKeyDownHandler}
         placeholder="Type '/' for commands"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: BlockData.text }}
-      />
+      >
+        {render()}
+      </div>
     </>
   );
 };
