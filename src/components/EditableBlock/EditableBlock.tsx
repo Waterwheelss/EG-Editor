@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
 import { addText, deleteText, replaceText } from '../../slices/blockSlice';
 import { Block } from '../../types/block';
-import { setCaret, getCaretCharacterOffset } from '../../lib/selection/caret';
+import { getCaretCharacterOffset } from '../../lib/selection/caret';
+import useCaret from './useCaret';
 
 type EditableBlockProps = {
   id: string
@@ -11,11 +12,14 @@ type EditableBlockProps = {
 
 const EditableBlock = ({ id }: EditableBlockProps) => {
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
-  const caretPosition = useRef(0);
-  const refStartContainer: React.MutableRefObject<Node | null> = useRef(null);
-  const refStartOffset = useRef(0);
-  const presskey: React.MutableRefObject<string | null> = useRef(null);
-  const isCollapsed: React.MutableRefObject<boolean> = useRef(false);
+  const caretPosition: React.MutableRefObject<number> = useRef(0);
+
+  const [{
+    setStartContainer,
+    setStartOffset,
+    setPressKey,
+    setIsCollapsed,
+  }] = useCaret();
 
   const BlockData = useSelector(
     (state: RootState) => state.blocks.blocksGroup.find((block) => block.id === id),
@@ -26,22 +30,6 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
   if (BlockData === undefined) {
     throw new TypeError('The Block data can not be undefined');
   }
-
-  useEffect(() => {
-    if (ref.current === null) {
-      throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
-    }
-
-    if (refStartContainer.current !== null) {
-      if (presskey.current === 'Backspace' && !isCollapsed.current) {
-        setCaret(refStartContainer.current, refStartOffset.current);
-      } else if (presskey.current === 'Backspace') {
-        setCaret(refStartContainer.current, refStartOffset.current - 1);
-      } else {
-        setCaret(refStartContainer.current, refStartOffset.current + 1);
-      }
-    }
-  });
 
   const onKeyDownHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const { key } = e;
@@ -54,16 +42,15 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       }
 
       const selection = window.getSelection() as Selection;
+      const { startOffset, startContainer } = selection.getRangeAt(0);
 
-      presskey.current = key;
-      isCollapsed.current = selection.isCollapsed;
+      setPressKey(key);
+      setIsCollapsed(selection.isCollapsed);
 
-      if (!isCollapsed.current) {
-        const { startOffset, endOffset, startContainer } = selection.getRangeAt(0);
+      if (!selection.isCollapsed) {
         caretPosition.current = startOffset;
-
-        refStartContainer.current = startContainer;
-        refStartOffset.current = startOffset;
+        setStartContainer(startContainer);
+        setStartOffset(startOffset);
 
         const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
 
@@ -73,11 +60,9 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
           endOffset: characterEndOffset,
         }));
       } else {
-        const { startOffset, startContainer } = selection.getRangeAt(0);
-
         caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
-        refStartContainer.current = startContainer;
-        refStartOffset.current = startOffset;
+        setStartContainer(startContainer);
+        setStartOffset(startOffset);
 
         dispatch(deleteText({
           id,
@@ -99,22 +84,20 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
 
     const selection = window.getSelection() as Selection;
 
-    presskey.current = null;
-    isCollapsed.current = selection.isCollapsed;
+    setPressKey(null);
+    setIsCollapsed(selection.isCollapsed);
 
-    if (!isCollapsed.current) {
+    if (!selection.isCollapsed) {
       const {
         startOffset,
         startContainer,
-        endOffset,
-        endContainer,
       } = selection.getRangeAt(0);
 
       const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
 
       caretPosition.current = startOffset;
-      refStartContainer.current = startContainer;
-      refStartOffset.current = startOffset;
+      setStartContainer(startContainer);
+      setStartOffset(startOffset);
 
       dispatch(replaceText({
         id,
@@ -126,8 +109,8 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       const { startOffset, startContainer } = selection.getRangeAt(0);
 
       caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
-      refStartContainer.current = startContainer;
-      refStartOffset.current = startOffset;
+      setStartContainer(startContainer);
+      setStartOffset(startOffset);
       dispatch(addText({
         id,
         text: e.key,
