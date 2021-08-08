@@ -10,7 +10,7 @@ export type Block = {
 
 export type BlockStyle = {
   tag: string,
-  style?: any,
+  inlineStyle?: any,
   startOffset: number;
   endOffset: number;
 }

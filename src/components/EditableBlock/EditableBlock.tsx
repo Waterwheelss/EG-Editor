@@ -1,10 +1,15 @@
 import React, { useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
-import { addText, deleteText, replaceText } from '../../slices/blockSlice';
-import { Block } from '../../types/block';
+import {
+  addText,
+  deleteText,
+  replaceText,
+  applyStyle,
+} from '../../slices/blockSlice';
 import { getCaretCharacterOffset } from '../../lib/selection/caret';
 import useCaret from './useCaret';
+import RenderHtml from './RenderHtml';
 
 type EditableBlockProps = {
   id: string
@@ -12,14 +17,6 @@ type EditableBlockProps = {
 
 const EditableBlock = ({ id }: EditableBlockProps) => {
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
-  const caretPosition: React.MutableRefObject<number> = useRef(0);
-
-  const [{
-    setStartContainer,
-    setStartOffset,
-    setPressKey,
-    setIsCollapsed,
-  }] = useCaret();
 
   const BlockData = useSelector(
     (state: RootState) => state.blocks.blocksGroup.find((block) => block.id === id),
@@ -30,6 +27,13 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
   if (BlockData === undefined) {
     throw new TypeError('The Block data can not be undefined');
   }
+
+  const [{
+    setStartContainer,
+    setStartOffset,
+    setPressKey,
+    setIsCollapsed,
+  }] = useCaret();
 
   const onKeyDownHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const { key } = e;
@@ -46,59 +50,71 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
 
       setPressKey(key);
       setIsCollapsed(selection.isCollapsed);
+      setStartContainer(startContainer);
+      setStartOffset(startOffset);
 
       if (!selection.isCollapsed) {
-        caretPosition.current = startOffset;
-        setStartContainer(startContainer);
-        setStartOffset(startOffset);
-
         const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
-
         dispatch(replaceText({
           id,
           startOffset: characterStartOffset,
           endOffset: characterEndOffset,
         }));
       } else {
-        caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
-        setStartContainer(startContainer);
-        setStartOffset(startOffset);
-
         dispatch(deleteText({
           id,
-          caretCharacterPosition: caretPosition.current,
+          caretCharacterPosition: getCaretCharacterOffset(ref.current).characterStartOffset,
         }));
       }
-    }
-    if (ref.current === null) {
-      throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
     }
   };
 
   const onKeyPressHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.preventDefault();
+    const { key } = e;
+
+    if (key === '`') {
+      if (ref.current === null) {
+        throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
+      }
+      // check any same symbol before
+      let endOffset = getCaretCharacterOffset(ref.current).characterEndOffset;
+      const { text } = BlockData;
+      for (let i = endOffset; i >= 0; i -= 1) {
+        if (text[i] === '`') {
+          let startOffset = i;
+          if (startOffset > endOffset) {
+            const temp = startOffset;
+            startOffset = endOffset;
+            endOffset = temp;
+          }
+          dispatch(applyStyle({
+            id,
+            style: {
+              tag: 'code',
+              startOffset,
+              endOffset,
+            },
+          }));
+          return;
+        }
+      }
+    }
 
     if (ref.current === null) {
       throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
     }
 
     const selection = window.getSelection() as Selection;
+    const { startOffset, startContainer } = selection.getRangeAt(0);
 
     setPressKey(null);
     setIsCollapsed(selection.isCollapsed);
+    setStartContainer(startContainer);
+    setStartOffset(startOffset);
 
     if (!selection.isCollapsed) {
-      const {
-        startOffset,
-        startContainer,
-      } = selection.getRangeAt(0);
-
       const { characterStartOffset, characterEndOffset } = getCaretCharacterOffset(ref.current);
-
-      caretPosition.current = startOffset;
-      setStartContainer(startContainer);
-      setStartOffset(startOffset);
-
       dispatch(replaceText({
         id,
         startOffset: characterStartOffset,
@@ -106,42 +122,69 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         newString: e.key,
       }));
     } else {
-      const { startOffset, startContainer } = selection.getRangeAt(0);
-
-      caretPosition.current = getCaretCharacterOffset(ref.current).characterStartOffset;
-      setStartContainer(startContainer);
-      setStartOffset(startOffset);
       dispatch(addText({
         id,
         text: e.key,
-        caretCharacterPosition: caretPosition.current,
+        caretCharacterPosition: getCaretCharacterOffset(ref.current).characterStartOffset,
       }));
     }
   };
 
-  const render = () => {
-    const html = markdownRender(BlockData);
-    return html;
-  };
-
-  const markdownRender = (block: Block) => {
-    const string = block.text;
-    const stringArray: Array<any> = [];
-
-    if (block.styles?.length === 0) {
-      stringArray.push(string);
-      return stringArray;
-    }
-
+  const render = (): any => {
+    // const html = markdownRender(BlockData);
+    // '<span>good <em>bad <code>testing</code> bad</em> good</span>'
+    const block = { ...BlockData };
+    const renderGroup: any = [];
+    const { text } = block;
     block.styles?.forEach((style) => {
-      const { startOffset, endOffset } = style;
-      stringArray.push(string.substring(0, startOffset));
-      const propString = string.substring(startOffset, endOffset);
-      stringArray.push(<code>{propString}</code>);
-      stringArray.push(string.substring(endOffset, string.length));
+      const { startOffset, endOffset, tag } = style;
+      renderGroup.push({
+        position: startOffset,
+        tagType: 'openning',
+        tag,
+      });
+      renderGroup.push({
+        position: endOffset,
+        tagType: 'closing',
+        tag,
+      });
     });
 
-    return stringArray;
+    renderGroup.sort((a: any, b: any) => {
+      if (a.position < b.position) {
+        return -1;
+      }
+      return 1;
+    });
+
+    const recur = (group: any) => {
+      let index = 0;
+
+      const isNextClose = (data: any) => data?.tagType === 'closing';
+
+      const innerRecur = (data: any, initArray = []): any => {
+        const result: any = [];
+        const textSlice = text.substring(data[index].position, data[index + 1].position);
+        result.push(data[index].tag, textSlice);
+
+        while (!isNextClose(data[index + 1])) {
+          index += 1;
+          const next = innerRecur(data);
+          result.push(next[0], next[1] ? next[1] : '');
+        }
+        index += 1;
+        if (index + 1 >= data.length) {
+          return [result];
+        }
+        return [result, text.substring(data[index].position, data[index + 1].position)];
+      };
+
+      return innerRecur(group);
+    };
+
+    const [renderReadyData] = recur(renderGroup);
+
+    return <RenderHtml htmlArray={renderReadyData} />;
   };
 
   return (

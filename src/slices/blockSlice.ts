@@ -7,6 +7,7 @@ import {
   Block,
   BlockState,
   BlockPayload,
+  BlockStyle,
 } from '../types/block';
 import {
   addString,
@@ -32,6 +33,11 @@ interface ReplaceTextPayload {
   newString?: string,
 }
 
+interface ApplyStylePayload {
+  id: string,
+  style: BlockStyle,
+}
+
 const createInitialState = (name: string): BlockState => {
   const id = nanoid();
   const initialBlock: Block = {
@@ -41,8 +47,18 @@ const createInitialState = (name: string): BlockState => {
     styles: [
       {
         tag: 'code',
+        startOffset: 5,
+        endOffset: 20,
+      },
+      {
+        tag: 'em',
         startOffset: 8,
-        endOffset: 12,
+        endOffset: 17,
+      },
+      {
+        tag: 'strong',
+        startOffset: 11,
+        endOffset: 14,
       },
     ],
   };
@@ -171,13 +187,32 @@ export const blockSlice = createSlice({
           styleToRemove.push(key);
         }
       });
-
       styleToRemove.forEach((index) => {
         state.blocksGroup[blockIndex].styles?.splice(index, 1);
       });
 
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = replaceString(state.blocksGroup[blockIndex].text, startOffset, endOffset, newString);
+    },
+    applyStyle: (state, action: PayloadAction<ApplyStylePayload>) => {
+      const { id, style } = action.payload;
+      const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+
+      const removeCharacterPosition = style.startOffset;
+
+      state.blocksGroup[blockIndex].styles?.forEach((styleBlock) => {
+        if (removeCharacterPosition > styleBlock.startOffset
+          && removeCharacterPosition <= styleBlock.endOffset) {
+          styleBlock.endOffset -= 1;
+        } else if (removeCharacterPosition < styleBlock.startOffset) {
+          styleBlock.startOffset -= 1;
+          styleBlock.endOffset -= 1;
+        }
+      });
+
+      // eslint-disable-next-line max-len
+      state.blocksGroup[blockIndex].text = deleteString(state.blocksGroup[blockIndex].text, style.startOffset + 1);
+      state.blocksGroup[blockIndex].styles?.push(style);
     },
   },
 });
@@ -188,6 +223,7 @@ export const {
   addText,
   deleteText,
   replaceText,
+  applyStyle,
 } = blockSlice.actions;
 
 export default blockSlice.reducer;
