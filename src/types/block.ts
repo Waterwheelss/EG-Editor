@@ -5,7 +5,7 @@ export type BlockPayload = {
 
 export type Block = {
   id: string,
-  styles?: Array<BlockStyle>,
+  styles: Array<BlockStyle>,
 } & BlockPayload
 
 export type BlockStyle = {

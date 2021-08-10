@@ -10,6 +10,8 @@ import {
 import { getCaretCharacterOffset } from '../../lib/selection/caret';
 import useCaret from './useCaret';
 import RenderHtml from './RenderHtml';
+import { getTags } from '../../lib/render/getRenderTags';
+import { getRenderArray } from '../../lib/render/getRenderArray';
 
 type EditableBlockProps = {
   id: string
@@ -131,58 +133,11 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
   };
 
   const render = (): any => {
-    // const html = markdownRender(BlockData);
-    // '<span>good <em>bad <code>testing</code> bad</em> good</span>'
     const block = { ...BlockData };
-    const renderGroup: any = [];
     const { text } = block;
-    block.styles?.forEach((style) => {
-      const { startOffset, endOffset, tag } = style;
-      renderGroup.push({
-        position: startOffset,
-        tagType: 'openning',
-        tag,
-      });
-      renderGroup.push({
-        position: endOffset,
-        tagType: 'closing',
-        tag,
-      });
-    });
 
-    renderGroup.sort((a: any, b: any) => {
-      if (a.position < b.position) {
-        return -1;
-      }
-      return 1;
-    });
-
-    const recur = (group: any) => {
-      let index = 0;
-
-      const isNextClose = (data: any) => data?.tagType === 'closing';
-
-      const innerRecur = (data: any, initArray = []): any => {
-        const result: any = [];
-        const textSlice = text.substring(data[index].position, data[index + 1].position);
-        result.push(data[index].tag, textSlice);
-
-        while (!isNextClose(data[index + 1])) {
-          index += 1;
-          const next = innerRecur(data);
-          result.push(next[0], next[1] ? next[1] : '');
-        }
-        index += 1;
-        if (index + 1 >= data.length) {
-          return [result];
-        }
-        return [result, text.substring(data[index].position, data[index + 1].position)];
-      };
-
-      return innerRecur(group);
-    };
-
-    const [renderReadyData] = recur(renderGroup);
+    const tags = getTags(block, text);
+    const renderReadyData = getRenderArray(tags, text);
 
     return <RenderHtml htmlArray={renderReadyData} />;
   };

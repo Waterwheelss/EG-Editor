@@ -6,7 +6,7 @@ type Props = {
   tagName: keyof JSX.IntrinsicElements
 }
 
-const RenderHtml: any = ({ htmlArray, tagName: Wrapper = htmlArray[0] }: Props) => {
+const RenderHtml: any = ({ htmlArray, tagName: Wrapper = htmlArray[0] === 'none' ? React.Fragment : htmlArray[0] }: Props) => {
   const render = (array: any): any => {
     const arrayWithoutTagElement = array.filter((_: any, index: any) => index !== 0);
     return arrayWithoutTagElement.map((item: any) => {

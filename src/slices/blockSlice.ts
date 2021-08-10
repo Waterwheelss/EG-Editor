@@ -45,21 +45,21 @@ const createInitialState = (name: string): BlockState => {
     name,
     text: 'initial test secondtest',
     styles: [
-      {
-        tag: 'code',
-        startOffset: 5,
-        endOffset: 20,
-      },
-      {
-        tag: 'em',
-        startOffset: 8,
-        endOffset: 17,
-      },
-      {
-        tag: 'strong',
-        startOffset: 11,
-        endOffset: 14,
-      },
+      // {
+      //   tag: 'code',
+      //   startOffset: 5,
+      //   endOffset: 20,
+      // },
+      // {
+      //   tag: 'em',
+      //   startOffset: 8,
+      //   endOffset: 17,
+      // },
+      // {
+      //   tag: 'strong',
+      //   startOffset: 11,
+      //   endOffset: 14,
+      // },
     ],
   };
 
@@ -87,6 +87,7 @@ export const blockSlice = createSlice({
         return {
           payload: {
             id: nanoid(),
+            styles: [],
             ...block,
           },
         };
