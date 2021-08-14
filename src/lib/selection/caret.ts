@@ -3,6 +3,16 @@ type CharacterOffset = {
   characterEndOffset: number,
 }
 
+export const isSelected = () => {
+  const selection = window.getSelection();
+
+  if (selection?.type === 'None') {
+    return false;
+  }
+
+  return true;
+};
+
 export const getCaretCharacterOffset = (element: HTMLDivElement): CharacterOffset => {
   const selection = window.getSelection();
 
@@ -37,6 +47,6 @@ export const setCaret = (startContainer: Node, startOffset: number): void => {
   newRange.setStart(startContainer, startOffset);
   newRange.collapse(true);
   selection?.removeAllRanges();
-  console.log(newRange);
   selection?.addRange(newRange);
+  console.log(newRange);
 };

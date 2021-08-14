@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
 import {
@@ -7,7 +7,7 @@ import {
   replaceText,
   applyStyle,
 } from '../../slices/blockSlice';
-import { getCaretCharacterOffset } from '../../lib/selection/caret';
+import { getCaretCharacterOffset, isSelected } from '../../lib/selection/caret';
 import useCaret from './useCaret';
 import RenderHtml from './RenderHtml';
 import { getTags } from '../../lib/render/getRenderTags';
@@ -30,16 +30,16 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
     throw new TypeError('The Block data can not be undefined');
   }
 
-  const [{
+  const {
     setStartContainer,
     setStartOffset,
-    setPressKey,
+    setInputType,
     setIsCollapsed,
-  }] = useCaret();
+    newNodeRef,
+  } = useCaret();
 
   const onKeyDownHandler = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const { key } = e;
-
     if (key === 'Backspace') {
       e.preventDefault();
 
@@ -50,7 +50,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
       const selection = window.getSelection() as Selection;
       const { startOffset, startContainer } = selection.getRangeAt(0);
 
-      setPressKey(key);
+      setInputType(key);
       setIsCollapsed(selection.isCollapsed);
       setStartContainer(startContainer);
       setStartOffset(startOffset);
@@ -80,7 +80,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         throw new TypeError('The reference to the EdtitableBlock can\'t not be null');
       }
       // check any same symbol before
-      let endOffset = getCaretCharacterOffset(ref.current).characterEndOffset;
+      let endOffset = getCaretCharacterOffset(ref.current).characterEndOffset - 1;
       const { text } = BlockData;
       for (let i = endOffset; i >= 0; i -= 1) {
         if (text[i] === '`') {
@@ -90,6 +90,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
             startOffset = endOffset;
             endOffset = temp;
           }
+          setInputType('pushInlineStyle');
           dispatch(applyStyle({
             id,
             style: {
@@ -110,7 +111,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
     const selection = window.getSelection() as Selection;
     const { startOffset, startContainer } = selection.getRangeAt(0);
 
-    setPressKey(null);
+    setInputType(null);
     setIsCollapsed(selection.isCollapsed);
     setStartContainer(startContainer);
     setStartOffset(startOffset);
@@ -138,8 +139,16 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
 
     const tags = getTags(block, text);
     const renderReadyData = getRenderArray(tags, text);
+    // eslint-disable-next-line max-len
+    const currentCaretPosition = isSelected() ? getCaretCharacterOffset(ref.current as any).characterStartOffset : null;
 
-    return <RenderHtml htmlArray={renderReadyData} />;
+    return (
+      <RenderHtml
+        ref={newNodeRef}
+        currentCaretPosition={currentCaretPosition}
+        htmlArray={renderReadyData}
+      />
+    );
   };
 
   return (

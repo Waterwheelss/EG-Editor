@@ -4,6 +4,7 @@ export const getRenderArray = (group: any, text: string) => {
   if (group.length === 0) {
     return [
       'none',
+      text.length,
       text,
     ];
   }
@@ -13,7 +14,7 @@ export const getRenderArray = (group: any, text: string) => {
   const getNextTag = (data: any): any => {
     const result: any = [];
     const textSlice = text.substring(data[index].position, data[index + 1].position);
-    result.push(data[index].tag, textSlice);
+    result.push(data[index].tag, data[index].closingAt, textSlice);
 
     while (!isNextClose(data[index + 1])) {
       index += 1;
@@ -24,6 +25,7 @@ export const getRenderArray = (group: any, text: string) => {
     if (index + 1 >= data.length) {
       return [result];
     }
+    // eslint-disable-next-line max-len
     return [result, text.substring(data[index].position, data[index + 1].position)];
   };
 

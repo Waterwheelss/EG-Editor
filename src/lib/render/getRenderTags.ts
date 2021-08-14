@@ -2,12 +2,13 @@ import { Block } from '../../types/block';
 
 type Tag = {
   position: number,
+  closingAt?: number,
   tagType: string,
   tag: string,
 }
 
 export const getTags = (block: Block, text: string) => {
-  const Tags: Array<Tag> = [];
+  const tags: Array<Tag> = [];
 
   if (block.styles.length === 0) {
     return [];
@@ -15,46 +16,48 @@ export const getTags = (block: Block, text: string) => {
 
   block.styles?.forEach((style) => {
     const { startOffset, endOffset, tag } = style;
-    Tags.push({
+    tags.push({
       position: startOffset,
+      closingAt: endOffset,
       tagType: 'openning',
       tag,
     });
-    Tags.push({
+    tags.push({
       position: endOffset,
       tagType: 'closing',
       tag,
     });
   });
 
-  Tags.sort((a: any, b: any) => {
+  tags.sort((a: any, b: any) => {
     if (a.position < b.position) {
       return -1;
     }
     return 1;
   });
 
-  if (Tags[0].position !== 0) {
+  if (tags[0].position !== 0) {
     const firstTag = {
       position: 0,
+      closingAt: text.length,
       tagType: 'openning',
       tag: 'none',
     };
 
-    Tags.unshift(firstTag);
+    tags.unshift(firstTag);
   }
 
-  if (Tags[Tags.length - 1].position !== text.length) {
+  if (tags[tags.length - 1].position !== text.length) {
     const lastTag = {
       position: text.length,
       tagType: 'closing',
       tag: 'none',
     };
 
-    Tags.push(lastTag);
+    tags.push(lastTag);
   }
 
-  return Tags;
+  return tags;
 };
 
 export default getTags;
