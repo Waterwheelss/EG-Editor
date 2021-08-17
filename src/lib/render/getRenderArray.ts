@@ -12,6 +12,7 @@ export const getRenderArray = (group: any, text: string) => {
   const isNextClose = (data: any) => data?.tagType === 'closing';
 
   const getNextTag = (data: any): any => {
+    console.log(data);
     const result: any = [];
     const textSlice = text.substring(data[index].position, data[index + 1].position);
     result.push(data[index].tag, data[index].closingAt, textSlice);

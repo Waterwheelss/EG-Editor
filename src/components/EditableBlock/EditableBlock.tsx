@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../rootReducer';
 import {
@@ -19,6 +19,8 @@ type EditableBlockProps = {
 
 const EditableBlock = ({ id }: EditableBlockProps) => {
   const ref: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
+
+  console.log('render!');
 
   const BlockData = useSelector(
     (state: RootState) => state.blocks.blocksGroup.find((block) => block.id === id),
@@ -91,6 +93,10 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
             endOffset = temp;
           }
           setInputType('pushInlineStyle');
+          dispatch(deleteText({
+            id,
+            caretCharacterPosition: startOffset + 1,
+          }));
           dispatch(applyStyle({
             id,
             style: {
@@ -99,6 +105,7 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
               endOffset,
             },
           }));
+          // selection.removeAllRanges();
           return;
         }
       }
@@ -124,12 +131,14 @@ const EditableBlock = ({ id }: EditableBlockProps) => {
         endOffset: characterEndOffset,
         newString: e.key,
       }));
+      selection.removeAllRanges();
     } else {
       dispatch(addText({
         id,
         text: e.key,
         caretCharacterPosition: getCaretCharacterOffset(ref.current).characterStartOffset,
       }));
+      selection.removeAllRanges();
     }
   };
 

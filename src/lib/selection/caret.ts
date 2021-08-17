@@ -48,5 +48,4 @@ export const setCaret = (startContainer: Node, startOffset: number): void => {
   newRange.collapse(true);
   selection?.removeAllRanges();
   selection?.addRange(newRange);
-  console.log(newRange);
 };

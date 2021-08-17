@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { setCaret } from '../../lib/selection/caret';
+import { getCaretCharacterOffset, setCaret } from '../../lib/selection/caret';
 
 const useCaret = () => {
   const refStartContainer: React.MutableRefObject<Node | null> = useRef(null);
@@ -15,7 +15,14 @@ const useCaret = () => {
       } else if (inputType.current === 'Backspace' && !isCollapsed.current) {
         setCaret(refStartContainer.current, refStartOffset.current);
       } else if (inputType.current === 'Backspace') {
-        setCaret(refStartContainer.current, refStartOffset.current - 1);
+        if (refStartOffset.current === 0) {
+          const previousSibling = refStartContainer.current.previousSibling as Node;
+          const { lastChild } = previousSibling;
+          const offset = lastChild?.nodeValue?.length ? lastChild?.nodeValue?.length : 0;
+          setCaret(lastChild as Node, offset);
+        } else {
+          setCaret(refStartContainer.current, refStartOffset.current - 1);
+        }
       } else {
         setCaret(refStartContainer.current, refStartOffset.current + 1);
       }

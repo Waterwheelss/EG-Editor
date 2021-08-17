@@ -36,28 +36,20 @@ export const getTags = (block: Block, text: string) => {
     return 1;
   });
 
-  if (tags[0].position !== 0) {
-    const firstTag = {
-      position: 0,
-      closingAt: text.length,
-      tagType: 'openning',
-      tag: 'none',
-    };
+  const firstTag = {
+    position: 0,
+    closingAt: text.length,
+    tagType: 'openning',
+    tag: 'none',
+  };
 
-    tags.unshift(firstTag);
-  }
+  const lastTag = {
+    position: text.length,
+    tagType: 'closing',
+    tag: 'none',
+  };
 
-  if (tags[tags.length - 1].position !== text.length) {
-    const lastTag = {
-      position: text.length,
-      tagType: 'closing',
-      tag: 'none',
-    };
-
-    tags.push(lastTag);
-  }
-
-  return tags;
+  return [firstTag, ...tags, lastTag];
 };
 
 export default getTags;

@@ -1,4 +1,6 @@
 import {
+  createAction,
+  createReducer,
   createSlice,
   nanoid,
   PayloadAction,
@@ -37,6 +39,16 @@ interface ApplyStylePayload {
   id: string,
   style: BlockStyle,
 }
+
+interface ShiftStylePayload {
+  id: string,
+  type: string,
+  caretCharacterPosition: number,
+  startOffset: number,
+  endOffset: number,
+}
+
+const addTextAction = createAction<AddTextPayload>('blocks/addText');
 
 const createInitialState = (name: string): BlockState => {
   const id = nanoid();
@@ -125,8 +137,9 @@ export const blockSlice = createSlice({
     deleteText: (state, action: PayloadAction<DeleteTextPayload>) => {
       const { id, caretCharacterPosition } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+      const styleToRemove: any = [];
 
-      state.blocksGroup[blockIndex].styles?.forEach((style) => {
+      state.blocksGroup[blockIndex].styles?.forEach((style, key) => {
         if (caretCharacterPosition > style.startOffset
           && caretCharacterPosition <= style.endOffset) {
           style.endOffset -= 1;
@@ -134,6 +147,14 @@ export const blockSlice = createSlice({
           style.startOffset -= 1;
           style.endOffset -= 1;
         }
+
+        if (style.startOffset === style.endOffset) {
+          styleToRemove.push(key);
+        }
+      });
+
+      styleToRemove.forEach((index: any) => {
+        state.blocksGroup[blockIndex].styles?.splice(index, 1);
       });
 
       // eslint-disable-next-line max-len
@@ -195,24 +216,34 @@ export const blockSlice = createSlice({
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = replaceString(state.blocksGroup[blockIndex].text, startOffset, endOffset, newString);
     },
+    shiftStyle: (state, action: PayloadAction<ShiftStylePayload>) => {
+      const {
+        id,
+        type,
+        caretCharacterPosition,
+        startOffset,
+        endOffset,
+      } = action.payload;
+      const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
+
+      switch (type) {
+        case 'deleteText':
+          state.blocksGroup[blockIndex].styles?.forEach((style) => {
+            if (caretCharacterPosition > style.startOffset
+              && caretCharacterPosition <= style.endOffset) {
+              style.endOffset += 1;
+            } else if (caretCharacterPosition <= style.startOffset) {
+              style.startOffset += 1;
+              style.endOffset += 1;
+            }
+          });
+          break;
+        default:
+      }
+    },
     applyStyle: (state, action: PayloadAction<ApplyStylePayload>) => {
       const { id, style } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
-
-      const removeCharacterPosition = style.startOffset;
-
-      state.blocksGroup[blockIndex].styles?.forEach((styleBlock) => {
-        if (removeCharacterPosition > styleBlock.startOffset
-          && removeCharacterPosition <= styleBlock.endOffset) {
-          styleBlock.endOffset -= 1;
-        } else if (removeCharacterPosition < styleBlock.startOffset) {
-          styleBlock.startOffset -= 1;
-          styleBlock.endOffset -= 1;
-        }
-      });
-
-      // eslint-disable-next-line max-len
-      state.blocksGroup[blockIndex].text = deleteString(state.blocksGroup[blockIndex].text, style.startOffset + 1);
       state.blocksGroup[blockIndex].styles?.push(style);
     },
   },
