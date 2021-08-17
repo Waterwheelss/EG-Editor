@@ -1,6 +1,5 @@
 import {
   createAction,
-  createReducer,
   createSlice,
   nanoid,
   PayloadAction,
@@ -16,6 +15,9 @@ import {
   deleteString,
   replaceString,
 } from '../utils/string';
+import shiftStyleWithDeleteText from './shiftStyleWithDeleteText';
+import shiftStyleWithReplaceText from './shiftStyleWithReplaceText';
+import shiftStyleWithAddText from './shiftStyleWithAddText';
 
 interface AddTextPayload {
   id: string,
@@ -46,26 +48,25 @@ interface ShiftStylePayload {
   caretCharacterPosition: number,
   startOffset: number,
   endOffset: number,
+  hasNewString?: boolean,
 }
-
-const addTextAction = createAction<AddTextPayload>('blocks/addText');
 
 const createInitialState = (name: string): BlockState => {
   const id = nanoid();
   const initialBlock: Block = {
     id,
     name,
-    text: 'initial test secondtest',
+    text: '01234567891011121314151617181920',
     styles: [
       // {
       //   tag: 'code',
-      //   startOffset: 5,
-      //   endOffset: 20,
+      //   startOffset: 2,
+      //   endOffset: 7,
       // },
       // {
       //   tag: 'em',
-      //   startOffset: 8,
-      //   endOffset: 17,
+      //   startOffset: 7,
+      //   endOffset: 10,
       // },
       // {
       //   tag: 'strong',
@@ -121,41 +122,12 @@ export const blockSlice = createSlice({
       const { id, text, caretCharacterPosition } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
 
-      state.blocksGroup[blockIndex].styles?.forEach((style) => {
-        if (caretCharacterPosition > style.startOffset
-          && caretCharacterPosition <= style.endOffset) {
-          style.endOffset += 1;
-        } else if (caretCharacterPosition <= style.startOffset) {
-          style.startOffset += 1;
-          style.endOffset += 1;
-        }
-      });
-
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = addString(state.blocksGroup[blockIndex].text, caretCharacterPosition, text);
     },
     deleteText: (state, action: PayloadAction<DeleteTextPayload>) => {
       const { id, caretCharacterPosition } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
-      const styleToRemove: any = [];
-
-      state.blocksGroup[blockIndex].styles?.forEach((style, key) => {
-        if (caretCharacterPosition > style.startOffset
-          && caretCharacterPosition <= style.endOffset) {
-          style.endOffset -= 1;
-        } else if (caretCharacterPosition < style.startOffset) {
-          style.startOffset -= 1;
-          style.endOffset -= 1;
-        }
-
-        if (style.startOffset === style.endOffset) {
-          styleToRemove.push(key);
-        }
-      });
-
-      styleToRemove.forEach((index: any) => {
-        state.blocksGroup[blockIndex].styles?.splice(index, 1);
-      });
 
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = deleteString(state.blocksGroup[blockIndex].text, caretCharacterPosition);
@@ -165,53 +137,6 @@ export const blockSlice = createSlice({
         id, startOffset, endOffset, newString,
       } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
-
-      const styleToRemove: Array<number> = [];
-
-      state.blocksGroup[blockIndex].styles?.forEach((style, key) => {
-        const insertOffset = newString ? 1 : 0;
-
-        if (startOffset < style.startOffset && endOffset < style.startOffset) {
-          const shift = endOffset - startOffset - insertOffset;
-          style.startOffset -= shift;
-          style.endOffset -= shift;
-        } else if (
-          startOffset < style.startOffset
-          && endOffset >= style.startOffset
-          && endOffset <= style.endOffset
-        ) {
-          const shift = endOffset - startOffset - insertOffset;
-          // The 'plus one' here is to prevent the new character be set on the next node.
-          style.startOffset = startOffset + insertOffset;
-          style.endOffset -= shift;
-        } else if (
-          startOffset >= style.startOffset
-          && startOffset < style.endOffset
-          && endOffset > style.endOffset
-        ) {
-          // The 'plus one' here is to prevent the new character be set on the next node.
-          style.endOffset = startOffset + insertOffset;
-        } else if (
-          startOffset === style.startOffset
-          && endOffset === style.endOffset
-        ) {
-          style.endOffset = startOffset + insertOffset;
-        } else if (
-          startOffset >= style.startOffset
-          && endOffset <= style.endOffset
-        ) {
-          const shift = endOffset - startOffset - insertOffset;
-          style.endOffset -= shift;
-        } else if (
-          startOffset < style.startOffset
-          && endOffset > style.endOffset
-        ) {
-          styleToRemove.push(key);
-        }
-      });
-      styleToRemove.forEach((index) => {
-        state.blocksGroup[blockIndex].styles?.splice(index, 1);
-      });
 
       // eslint-disable-next-line max-len
       state.blocksGroup[blockIndex].text = replaceString(state.blocksGroup[blockIndex].text, startOffset, endOffset, newString);
@@ -223,21 +148,34 @@ export const blockSlice = createSlice({
         caretCharacterPosition,
         startOffset,
         endOffset,
+        hasNewString = false,
       } = action.payload;
       const blockIndex = state.blocksGroup.findIndex((block) => block.id === id);
 
       switch (type) {
-        case 'deleteText':
-          state.blocksGroup[blockIndex].styles?.forEach((style) => {
-            if (caretCharacterPosition > style.startOffset
-              && caretCharacterPosition <= style.endOffset) {
-              style.endOffset += 1;
-            } else if (caretCharacterPosition <= style.startOffset) {
-              style.startOffset += 1;
-              style.endOffset += 1;
-            }
+        case 'addText': {
+          state.blocksGroup[blockIndex].styles = shiftStyleWithAddText({
+            caretCharacterPosition,
+            styles: state.blocksGroup[blockIndex].styles,
           });
           break;
+        }
+        case 'deleteText': {
+          state.blocksGroup[blockIndex].styles = shiftStyleWithDeleteText({
+            caretCharacterPosition,
+            styles: state.blocksGroup[blockIndex].styles,
+          });
+          break;
+        }
+        case 'replaceText': {
+          state.blocksGroup[blockIndex].styles = shiftStyleWithReplaceText({
+            startOffset,
+            endOffset,
+            hasNewString,
+            styles: state.blocksGroup[blockIndex].styles,
+          });
+          break;
+        }
         default:
       }
     },
@@ -256,6 +194,7 @@ export const {
   deleteText,
   replaceText,
   applyStyle,
+  shiftStyle,
 } = blockSlice.actions;
 
 export default blockSlice.reducer;

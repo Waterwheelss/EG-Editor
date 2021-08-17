@@ -12,7 +12,6 @@ export const getRenderArray = (group: any, text: string) => {
   const isNextClose = (data: any) => data?.tagType === 'closing';
 
   const getNextTag = (data: any): any => {
-    console.log(data);
     const result: any = [];
     const textSlice = text.substring(data[index].position, data[index + 1].position);
     result.push(data[index].tag, data[index].closingAt, textSlice);
@@ -20,7 +19,10 @@ export const getRenderArray = (group: any, text: string) => {
     while (!isNextClose(data[index + 1])) {
       index += 1;
       const next = getNextTag(data);
-      result.push(next[0], next[1] ? next[1] : '');
+      result.push(next[0]);
+      if (next[1]) {
+        result.push(next[1]);
+      }
     }
     index += 1;
     if (index + 1 >= data.length) {
@@ -31,7 +33,7 @@ export const getRenderArray = (group: any, text: string) => {
   };
 
   const renderArray = getNextTag(group);
-
+  console.log(renderArray);
   return renderArray[0];
 };
 

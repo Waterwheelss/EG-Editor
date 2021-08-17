@@ -1,7 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { getCaretCharacterOffset, setCaret } from '../../lib/selection/caret';
+import { setCaret } from '../lib/selection/caret';
 
-const useCaret = () => {
+export interface Caret {
+  setStartContainer: (element: Node) => void;
+  setStartOffset: (offset: number) => void;
+  setInputType: (key: string | null) => void;
+  setIsCollapsed: (boolean: boolean) => void;
+  newNodeRef: React.MutableRefObject<Node | null>;
+}
+
+const useCaret = (): Caret => {
   const refStartContainer: React.MutableRefObject<Node | null> = useRef(null);
   const refStartOffset: React.MutableRefObject<number> = useRef(0);
   const inputType: React.MutableRefObject<string | null> = useRef(null);
